@@ -3,7 +3,7 @@ import { getTime } from "./getTime";
 import { appendCRC2 } from "./crcCalculation";
 import { setEnabledBarcodes } from "./setEnabledBarcodes";
 import { interrogate } from "./interrogate";
-import { getData } from "./getData";
+import { getData, pollData } from "./getData";
 
 export const CommandBytes = {
     Interrogate: 1,
@@ -98,25 +98,21 @@ export class OpticonWrapper {
         const writer = this.port.writable.getWriter();
         const message = appendCRC2([CommandBytes.ClearBarCodes, STX, 0]);
         await writer.write(new Uint8Array(message));
+        writer.releaseLock();
         await this.close();
     }
 
     public polling = async () => {
-        await this.open(1);
-        try {
-            await this.getData();
-        } catch (e){
-            // the code in ireg is similar
-            // basically read and immediately delete
-            const err = e as Error;
-            if (err.message === 'No data was available!'){
-                const barcodes = await this.getData();
-                await this.deleteData();
-                await this.close();
-                return barcodes;
-            }
+
+        const barcodes = await this.getData();
+        if (barcodes.length){
+            throw new Error('There is data on device!');
         }
-        throw new Error('There is data available! You need to delete it first!');
+        await this.open(1);
+        const polled = await pollData(this.port);
+        await this.close();
+        await this.deleteData();
+        return polled;
     }
 
     public setTime = async () => {

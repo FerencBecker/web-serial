@@ -18,15 +18,7 @@ export const getData = async (port: SerialPort) => {
     const barcodes: number[][] = []
 
     while (true){
-        const timer = setTimeout(() => {
-            reader.releaseLock();
-            port.close();
-            throw new Error('No data was available!');
-        }, 5000);
-
         const { value } = await reader.read();
-
-        clearTimeout(timer);
 
         if (prefix.length !== 10){
             prefix.push(value[0]);
@@ -63,3 +55,43 @@ export const getData = async (port: SerialPort) => {
     reader.releaseLock();
     return parseBarcode(barcodes);
 }
+
+export const pollData = async (port: SerialPort) => {
+    const writer = port.writable.getWriter();
+    const message = appendCRC2([CommandBytes.UploadBarcodeData, STX, 0]);
+    await writer.write(new Uint8Array(message));
+    const reader = port.readable.getReader();
+    const prefix = [];
+    let barcodeLength = 0;
+    let currentBarcode: number[] = [];
+    const barcodes: number[][] = []
+
+    while (true){
+        const { value } = await reader.read();
+
+        if (prefix.length !== 10){
+            prefix.push(value[0]);
+            continue;
+        }
+
+        if (barcodeLength === 0){
+            //before each barcode there is byte describing its length, we set it here
+            barcodeLength = value[0];
+            if (currentBarcode.length){
+                //if barcode length was 0 and current barcode has value that means we read some data
+                // so lets save it
+                barcodes.push(currentBarcode);
+                currentBarcode = [];
+                break;
+            }
+        } else {
+            // just keep reading
+            currentBarcode.push(value[0]);
+            barcodeLength--;
+        }
+    }
+    writer.releaseLock();
+    reader.releaseLock();
+    return parseBarcode(barcodes);
+}
+
