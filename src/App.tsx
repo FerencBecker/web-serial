@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import './App.css';
 import { OpticonWrapper } from "./opticonCommunication/OpticonWrapper";
 import { DateTime } from "luxon";
+import { Barcode } from "./opticonCommunication/parseBarcode";
 
 enum Actions {
   None = 0,
@@ -18,6 +19,8 @@ function App() {
   const [history, setHistory] = useState<Actions[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [readDate, setReadDate] = useState<DateTime | undefined>();
+  const [barcodes, setBarcodes] = useState<Barcode[]>([]);
+
   try {
     OpticonWrapper.checkAvailability();
   } catch (e){
@@ -77,9 +80,9 @@ function App() {
     if (action === Actions.GetData){
       const getData = async () => {
         const barcodes = await wrapper.getData();
-        console.log(barcodes);
         setAction(Actions.None);
         setHistory((h) => [...h, Actions.GetData]);
+        setBarcodes(barcodes);
       };
       getData();
     }
@@ -96,6 +99,16 @@ function App() {
         { isConnected && <button onClick={() => setAction(Actions.ConfigureBarcodes)}>Configure bar code types</button>}
         { isConnected && <button onClick={() => setAction(Actions.Interrogate)}>Interrogate</button>}
         { isConnected && <button onClick={() => setAction(Actions.GetData)}>Get data</button>}
+        { barcodes.length &&
+            <table>
+              <thead>
+                <th>Barcode</th>
+                <th>Timestamp</th>
+              </thead>
+              <tbody>
+                {barcodes.map(b => <tr key={b.barcodeData}><td>{b.barcodeData}</td><td>{b.timestamp}</td></tr>)}
+              </tbody>
+            </table>}
       </div>
       <ul style={{display: 'flex', flexDirection: 'column'}}>
         { history.map((v, i) => {

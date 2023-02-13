@@ -1,7 +1,7 @@
 import { appendCRC2 } from "./crcCalculation";
 import { CommandBytes, STX } from "./OpticonWrapper";
 
-enum BarCodeType {
+export enum BarCodeType {
     CODE128 = 8,
     EAN = 9,
     RSS = 20,
