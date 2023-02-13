@@ -18,7 +18,16 @@ export const getData = async (port: SerialPort) => {
     const barcodes: number[][] = []
 
     while (true){
+        const timer = setTimeout(() => {
+            reader.releaseLock();
+            port.close();
+            throw new Error('No data was available!');
+        }, 5000);
+
         const { value } = await reader.read();
+
+        clearTimeout(timer);
+
         if (prefix.length !== 10){
             prefix.push(value[0]);
             continue;

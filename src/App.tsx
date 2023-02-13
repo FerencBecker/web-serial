@@ -10,7 +10,10 @@ enum Actions {
   GetTime = 2,
   ConfigureBarcodes = 3,
   Interrogate = 4,
-  GetData = 5
+  GetData = 5,
+  DeleteBarcodes = 6,
+  Polling = 7,
+  SetTime = 8
 }
 
 function App() {
@@ -88,6 +91,39 @@ function App() {
     }
   }, [action, wrapper]);
 
+  useEffect(() => {
+    if (action === Actions.DeleteBarcodes){
+      const getData = async () => {
+        await wrapper.deleteData();
+        setAction(Actions.None);
+        setHistory((h) => [...h, Actions.DeleteBarcodes]);
+      };
+      getData();
+    }
+  }, [action, wrapper]);
+
+  useEffect(() => {
+    if (action === Actions.Polling){
+      const getData = async () => {
+        await wrapper.polling();
+        setAction(Actions.None);
+        setHistory((h) => [...h, Actions.Polling]);
+      };
+      getData();
+    }
+  }, [action, wrapper]);
+
+  useEffect(() => {
+    if (action === Actions.SetTime){
+      const getData = async () => {
+        await wrapper.setTime();
+        setAction(Actions.None);
+        setHistory((h) => [...h, Actions.SetTime]);
+      };
+      getData();
+    }
+  }, [action, wrapper]);
+
   return (
     <div className="App" style={{display: 'flex'}}>
       <div style={{display: 'flex', flexDirection: 'column'}}>
@@ -99,6 +135,9 @@ function App() {
         { isConnected && <button onClick={() => setAction(Actions.ConfigureBarcodes)}>Configure bar code types</button>}
         { isConnected && <button onClick={() => setAction(Actions.Interrogate)}>Interrogate</button>}
         { isConnected && <button onClick={() => setAction(Actions.GetData)}>Get data</button>}
+        { isConnected && <button onClick={() => setAction(Actions.DeleteBarcodes)}>Delete data</button>}
+        { isConnected && <button onClick={() => setAction(Actions.Polling)}>Polling</button>}
+        { isConnected && <button onClick={() => setAction(Actions.SetTime)}>Set time</button>}
         { barcodes.length &&
             <table>
               <thead>

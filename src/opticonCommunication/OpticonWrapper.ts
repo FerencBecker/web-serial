@@ -93,6 +93,41 @@ export class OpticonWrapper {
         return barcodes;
     }
 
+    public deleteData = async () => {
+        await this.open(1);
+        const writer = this.port.writable.getWriter();
+        const message = appendCRC2([CommandBytes.ClearBarCodes, STX, 0]);
+        await writer.write(new Uint8Array(message));
+        await this.close();
+    }
+
+    public polling = async () => {
+        await this.open(1);
+        try {
+            await this.getData();
+        } catch (e){
+            // the code in ireg is similar
+            // basically read and immediately delete
+            const err = e as Error;
+            if (err.message === 'No data was available!'){
+                const barcodes = await this.getData();
+                await this.deleteData();
+                await this.close();
+                return barcodes;
+            }
+        }
+        throw new Error('There is data available! You need to delete it first!');
+    }
+
+    public setTime = async () => {
+        await this.open(1);
+        const message = appendCRC2([CommandBytes.SetTime, STX, 6, 30, 30, 12, 1, 1, 11, 0]);
+        const writer = this.port.writable.getWriter();
+        await writer.write(new Uint8Array(message));
+        writer.releaseLock();
+        await this.close();
+    }
+
     private open = async (bufferSize: number) => {
         await this.port.open({ baudRate: 9600, parity: "odd", dataBits: 8, stopBits: 1, bufferSize });
     }
