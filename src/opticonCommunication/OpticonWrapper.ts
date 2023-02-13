@@ -4,6 +4,8 @@ import { appendCRC2 } from "./crcCalculation";
 import { setEnabledBarcodes } from "./setEnabledBarcodes";
 import { interrogate } from "./interrogate";
 import { getData, pollData } from "./getData";
+import { clearTimeout } from "timers";
+import { Barcode } from "./parseBarcode";
 
 export const CommandBytes = {
     Interrogate: 1,
@@ -109,7 +111,10 @@ export class OpticonWrapper {
             throw new Error('There is data on device!');
         }
         await this.open(1);
-        const polled = await pollData(this.port);
+        let polled: Barcode[] = [];
+        while (!polled.length){
+            polled = await pollData(this.port);
+        }
         await this.close();
         await this.deleteData();
         return polled;

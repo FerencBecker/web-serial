@@ -60,38 +60,49 @@ export const pollData = async (port: SerialPort) => {
     const writer = port.writable.getWriter();
     const message = appendCRC2([CommandBytes.UploadBarcodeData, STX, 0]);
     await writer.write(new Uint8Array(message));
-    const reader = port.readable.getReader();
+
     const prefix = [];
     let barcodeLength = 0;
     let currentBarcode: number[] = [];
     const barcodes: number[][] = []
 
     while (true){
-        const { value } = await reader.read();
-        console.log('read');
-        if (prefix.length !== 10){
-            prefix.push(value[0]);
-            continue;
-        }
+        try {
+            const reader = port.readable.getReader();
+            const timer = setTimeout(() => {
+                reader.releaseLock();
 
-        if (barcodeLength === 0){
-            //before each barcode there is byte describing its length, we set it here
-            barcodeLength = value[0];
-            if (currentBarcode.length){
-                //if barcode length was 0 and current barcode has value that means we read some data
-                // so lets save it
-                barcodes.push(currentBarcode);
-                currentBarcode = [];
-                break;
+            }, 1000);
+
+            const { value } = await reader.read();
+            clearTimeout(timer);
+            reader.releaseLock();
+            if (prefix.length !== 10){
+                prefix.push(value[0]);
+                continue;
             }
-        } else {
-            // just keep reading
-            currentBarcode.push(value[0]);
-            barcodeLength--;
+
+            if (barcodeLength === 0){
+                //before each barcode there is byte describing its length, we set it here
+                barcodeLength = value[0];
+                if (currentBarcode.length){
+                    //if barcode length was 0 and current barcode has value that means we read some data
+                    // so lets save it
+                    barcodes.push(currentBarcode);
+                    currentBarcode = [];
+                    break;
+                }
+            } else {
+                // just keep reading
+                currentBarcode.push(value[0]);
+                barcodeLength--;
+            }
+        } catch (e){
+            writer.releaseLock();
+            return [];
         }
     }
     writer.releaseLock();
-    reader.releaseLock();
     return parseBarcode(barcodes);
 }
 

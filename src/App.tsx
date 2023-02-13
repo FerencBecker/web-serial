@@ -105,9 +105,10 @@ function App() {
     useEffect(() => {
         if (action === Actions.Polling) {
             const getData = async () => {
-                await wrapper.polling();
+                const barcodes = await wrapper.polling();
                 setAction(Actions.None);
                 setHistory((h) => [ ...h, Actions.Polling ]);
+                setBarcodes(barcodes);
             };
             getData();
         }
