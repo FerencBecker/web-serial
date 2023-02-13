@@ -117,7 +117,13 @@ export class OpticonWrapper {
 
     public setTime = async () => {
         await this.open(1);
-        const message = appendCRC2([CommandBytes.SetTime, STX, 6, 30, 30, 12, 1, 1, 11, 0]);
+        const secs = 30;
+        const mins = 30;
+        const hours = 12;
+        const days = 1;
+        const months = 1;
+        const years = 11;
+        const message = appendCRC2([ CommandBytes.SetTime, STX, 6, secs, mins, hours, days, months, years, 0]);
         const writer = this.port.writable.getWriter();
         await writer.write(new Uint8Array(message));
         writer.releaseLock();

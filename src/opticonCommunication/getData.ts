@@ -68,7 +68,7 @@ export const pollData = async (port: SerialPort) => {
 
     while (true){
         const { value } = await reader.read();
-
+        console.log('read');
         if (prefix.length !== 10){
             prefix.push(value[0]);
             continue;
